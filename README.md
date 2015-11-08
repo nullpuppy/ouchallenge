@@ -14,6 +14,8 @@ Targetting vagrant with Ubuntu 14.04 with 1 CPU and 1024MB RAM.
 > cd ouchallenge
 > vagrant up
 > vagrant ssh
+> cd /vagrant
+> source env/bin/activate
 > uwsgi --ini ouchallenge/owsgi-vagrant.ini
 
 ## API
