@@ -29,22 +29,26 @@ class ItemPriceService(APIView):
         # Raw SQL using built-in mode() function within postgres
         # Returns a single row with the highest most frequent list price and
         # count of items found for the given search parameters.
-        sql = '''SELECT
-                    mode() WITHIN GROUP (ORDER BY list_price DESC) AS model_value,
-                    count(*)
-                 FROM
-                    "itemPrices_itemsale"
-              '''
-        if item and city:
-            sql = "{} WHERE city = '{}' and title = '{}'".format(sql, city, item)
-        elif item:
-            sql = "{} WHERE title = '{}'".format(sql, item)
-        elif city:
-            sql = "{} WHERE city = '{}'".format(sql, city)
+        #
+        # -- This code is unsafe and is vulnerable to sql injection. incoming
+        #    parameters need to be escaped in some manner to be safe to query on.
+        #
+        # sql = '''SELECT
+        #             mode() WITHIN GROUP (ORDER BY list_price DESC) AS model_value,
+        #             count(*)
+        #          FROM
+        #             "itemPrices_itemsale"
+        #       '''
+        # if item and city:
+        #     sql = "{} WHERE city = '{}' and title = '{}'".format(sql, city, item)
+        # elif item:
+        #     sql = "{} WHERE title = '{}'".format(sql, item)
+        # elif city:
+        #     sql = "{} WHERE city = '{}'".format(sql, city)
 
-        with connection.cursor() as c:
-            c.execute(sql)
-            price_mode, count = c.fetchone()
+        # with connection.cursor() as c:
+        #     c.execute(sql)
+        #     price_mode, count = c.fetchone()
 
         # More traditional django ORM route of doing the above.
         # The above seems to be slightly faster, based on the
@@ -52,20 +56,20 @@ class ItemPriceService(APIView):
         # Adding caching and reworking the ORM query might be a better
         # choice moving forward.
 
-        # query = ItemSale.objects
-        # if item:
-        #     query = query.filter(title__startswith=item)
-        # if city:
-        #     query = query.filter(city=city)
+        query = ItemSale.objects
+        if item:
+            query = query.filter(title__startswith=item)
+        if city:
+            query = query.filter(city=city)
 
         # # Get total item count for given parameters.
-        # count = query.count()
+        count = query.count()
 
         # Find list_price mode for given parameters.
-        # query = query.order_by('list_price').values('list_price').annotate(price_count=Count('list_price'))
-        # price_mode = query.order_by('-price_count', '-list_price').first()
-        # if price_mode:
-        #     price_mode = price_mode.get('list_price')
+        query = query.order_by('list_price').values('list_price').annotate(price_count=Count('list_price'))
+        price_mode = query.order_by('-price_count', '-list_price').first()
+        if price_mode:
+            price_mode = price_mode.get('list_price')
 
         # If we didn't find anything, return 404 response, just as if item and
         # city weren't passed in.
