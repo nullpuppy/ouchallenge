@@ -1,7 +1,6 @@
 from itemPrices.models import ItemSale
 from django.db import connection
 from django.db.models import Count
-from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,7 +9,7 @@ from rest_framework import status
 NOT_FOUND_JSON_RESPONSE = {
     'status': 404,
     'content': {
-        'message': 'Not Found',
+        'message': 'Not found',
     }
 }
 
@@ -19,12 +18,12 @@ class ItemPriceService(APIView):
     """
     """
     def get(self, request):
-        # need request.query_params(item, city)
         item = request.query_params.get('item')
         city = request.query_params.get('city')
 
+        # If item and city are both excluded from the request, return
+        # a json blob with a status of 404.
         if not item and not city:
-            # error state
             return Response(NOT_FOUND_JSON_RESPONSE)
 
         # Raw SQL using built-in mode() function within postgres
@@ -37,9 +36,9 @@ class ItemPriceService(APIView):
                     "itemPrices_itemsale"
               '''
         if item and city:
-            sql = "{} WHERE city = '{}' and title = '{}%'".format(sql, city, item)
+            sql = "{} WHERE city = '{}' and title = '{}'".format(sql, city, item)
         elif item:
-            sql = "{} WHERE title LIKE '{}%'".format(sql, item)
+            sql = "{} WHERE title = '{}'".format(sql, item)
         elif city:
             sql = "{} WHERE city = '{}'".format(sql, city)
 
